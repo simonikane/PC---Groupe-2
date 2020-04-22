@@ -1,9 +1,5 @@
 # -*- coding: utf-8 -*-
-"""
-Created on Mon Apr 20 19:41:16 2020
 
-@author: irisj
-"""
 import unittest
 import logging
 
