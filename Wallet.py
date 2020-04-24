@@ -68,7 +68,20 @@ class Wallet:
             for utxo in tx.UTXOs:
                 utxoList.append(utxo)
         return utxoList
-
+		
+		# return the list of UTXO not linked to a TXI
+	def UTXO_not_linked_TXI(UTXO_list, TX_List):
+		cpt=0
+		UTXO_not_linked=[]
+		for i in range(len(UTXO_list)
+			for j in range(len(TX_list))
+				for k in range(len(TX_list[j].UTXOs))
+					if UTXO_list[i].nBloc==TX_List[j].UTXOs[k].nBloc && UTXO_list[i].nTx==TX_List[j].UTXOs[k].nTx && UTXO_list[i].nUTXO==TX_List[j].UTXOs[k].nUTXO:
+						cpt=cpt+1
+			if cpt==0:
+				UTXO_not_linked.append(UTXO_list[i])
+			cpt=0
+		return UTXO_not_linked
 ################ To Do list #############################
 #faire une fonction qui permet de recuperer la liste des utxos non depensés: utiliser la classe Tx
 ############se servir de cette fonction dans la balance afin de controler les montant non depensés
@@ -119,8 +132,16 @@ class Wallet_test(unittest.TestCase):
             Wallet(None, "Test")
         wallet = Wallet("id123", "AZERTYUIOP123")
         self.assertEqual([wallet.identifiant, wallet.mot_de_passe], ["id123", "AZERTYUIOP123"])
-
-
-
+	
+	def test_UTXO_not_linked_TXI(self):
+		myWallet = Wallet("id123", "AZERTYUIOP123")
+		UTXO=["a"]
+		TXI=[]
+		self.assertTrue(myWallet.UTXO_not_linked_TXI(UTXO,TXI),UTXO)
+		UTXO=["a"]
+		TXI=["a"]
+		none=[]
+		self.assertFalse(myWallet.UTXO_not_linked_TXI(UTXO,TXI),TXI)
+		self.assertTrue(myWallet.UTXO_not_linked_TXI(UTXO,TXI),none)
 if __name__ == '__main__':
     unittest.main()
