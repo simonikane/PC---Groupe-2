@@ -1,73 +1,14 @@
-# -*- coding: utf-8 -*-
-
 import unittest
 import logging
+import sys, os
 
-class Wallet:
-
-    def __init__(self, identifiant, mot_de_passe):
-        """
-        Initialisation of the portfolio
-        """
-        if identifiant in ("", None) or mot_de_passe in ("", None):
-            raise(ValueError("ID and password must be completed"))
-        else:
-            self.identifiant = identifiant
-            self.mot_de_passe = mot_de_passe
-            self.open = True
-            self.cryptoPuzzle = {} # Key : private key, value = public key
-            logging.info('Test of the creation of a new wallet')
-
-    def askForConnexion():
-        loginId = input("Please enter your login id : ")
-        password = input("Password : ")
-        return loginId, password
-
-    def areCredentialsValid(self, login, password, goodCdt = False):
-        if(login == self.identifiant and password == self.mot_de_passe):
-            self.open = True
-        else:
-            self.open = False
-            print("Invalid credentials, plase try again")
-
-    def connexion(self):
-        while(self.open == False):
-            loginId, password = self.askForConnexion()
-            if(loginId == self.identifiant and password == self.mot_de_passe):
-                self.open = True
-                print("Please wait, you will be redirected to your personnal portfolio")
-
-    def disconnection(self):
-        self.open = False
-        print("See you later ...")
+# ===========================================
+#               COMPONENT N° 2 
+#                     -
+#                   WALLET 
+# ===========================================
 
 
-    def balance(self, blocList, publicAddress = None):
-        """
-        This function returns the amount of cryptocurrency for one address or all the addresses of the portfolio
-        :param blocList => list of all the blockchain blocks
-        :param publicAddress => if None we return the balance of all the addresses
-        """
-        balance = 0
-        for bloc in blocList:
-            tx = bloc.tx1
-            for utxo in tx.UTXOs:
-                if publicAddress != None:
-                    if utxo.dest == publicAddress:
-                        balance = balance + utxo.montant
-                else:
-                    if utxo.dest in self.cryptoPuzzle.values():
-                        balance = balance + utxo.montant
-        return balance
-
-        # return the list of UtXO in the bloc
-    def retrieveUTXOs(self, blocList):
-        utxoList = []
-        for bloc in blocList:
-            tx = bloc.tx1
-            for utxo in tx.UTXOs:
-                utxoList.append(utxo)
-        return utxoList
 
 ################ To Do list #############################
 #faire une fonction qui permet de recuperer la liste des utxos non depensés: utiliser la classe Tx
@@ -80,14 +21,179 @@ class Wallet:
 
 ################end To Do list#############################
 
-    #transaction : serve to initialize an transaction and help to create à signature
-    #self : representes the issuer
-    #to : indicates recipient address
-    #amount : transaction amount
+
+
+
+# Main menu
+
+# Starts the application / allows the user to identify himself and choose what he wants to do
+# The user enter his credentials : USERNAME and PASSWORD.
+# When the user is authentified, he can choose what to do
+# Enter "1" to check his account balance
+# Enter "2" to make a transaction
+# Enter "0" to logout 
+
+def menu_principal(Wallet):
+    os.system('clear')
+    print ("Hello,\n")
+    Wallet.connexion()
+    #S'identifier en utilisant les fonctions de Iris
+    print ("What do you want to do ?\n")
+    print ("1. Check my account balance \n")
+    print ("2. Make a transaction \n")
+    print ("\n9. Logout")
+    choice = input(" >>  ")
+    menu(choice)
+    
+#Execute the given choice of the user
+    
+def menu(choice):
+    if choice.lower() == '':
+        actions['menu_principal']()
+    else:
+        try:
+            actions[choice.lower()]()
+        except KeyError:
+            print ("Invalid choice, please try again\n")
+            actions['0']()
+
+    return
+
+#Describes the ouput of the account balance
+    
+def menu_balance():
+    print ("Hello\n")
+    print ("Do you want to consult your balance according to a specific account or all of your accounts?")
+    print ("1. One specific account \n")
+    print ("2. All of my accounts \n")
+    account_choice = input(" >>  ")
+    if account_choice == 1 :
+        print ("What are the account's informations ?")
+        account_account = input(" >>  ")
+        #print (Wallet.balance ('''Mettre ici les arguments'''))
+    elif account_choice == 2 :
+        print ("Your current account balance for all of your accounts is :")
+        #print (Wallet.balance ('''Mettre ici les arguments'''))
+    print ("8. Back to the main menu")
+    print ("9. Logout" )
+    choix = input(" >>  ")
+    menu(choix)
+    return
+
+#Describe the action related to transactions (creation of a transaction)
+    
+def menu_transaction():
+    print ("Hello\n")
+    print ("Who is the recipient of the transfer ?")
+    dest = input(" >> ")
+    print ("How much do you want to transfer ?")
+    amount = input(" >> ")
+    #print (Wallet.transaction ('''Mettre ici les arguments'''))
+    print ("8. Back to the main menu")
+    print ("9. Logout" )
+    choice = input(" >>  ")
+    menu(choice)
+    return
+
+# Back to main menu
+def back():
+    actions['menu_principal']()
+
+# Exit program
+def quit():
+    sys.exit()
+    
+# Menu definition
+# Describes all the possible functions of the program
+actions = {
+    '0': menu_principal,
+    '1': menu_balance,
+    '2': menu_transaction,
+    '8': back,
+    '9': quit,
+}
+
+class Wallet:
+
+     #Initialisation of the portfolio
+    #:param identifiant => the given id
+    #:param password => the given password
+    def __init__(self, identifiant, mot_de_passe):
+        
+        if identifiant in ("", None) or mot_de_passe in ("", None):
+            raise(ValueError("ID and password must be completed"))
+        else:
+            self.identifiant = identifiant
+            self.mot_de_passe = mot_de_passe
+            self.open = False
+            self.cryptoPuzzle = {} # Key : private key, value = public key
+            logging.info('Test of the creation of a new wallet')
+
+    # Collects the user's credentials
+    def askForConnexion(self):
+        loginId = input("Please enter your login id : ")
+        password = input("Password : ")
+        return loginId, password
+
+    # Check if the credentials corresponds to a profile
+    #:param login => the given id
+    #:param password => the given password
+    #:param goodCdt => if TRUE the profile exists (id and password corresponds)
+    def areCredentialsValid(self, login, password, goodCdt = False):
+        if(login == self.identifiant and password == self.mot_de_passe):
+            self.open = True
+        else:
+            self.open = False
+            print("Invalid credentials, please try again")
+
+    #Opens a session for the current user
+    def connexion(self):
+        while(self.open == False):
+            loginId, password = self.askForConnexion()
+            if(loginId == self.identifiant and password == self.mot_de_passe):
+                self.open = True
+                print("Please wait, you will be redirected to your personnal portfolio")
+                
+    # Logs out the user
+    def logout(self):
+        self.open = False
+        print("See you later ...")
+
+    #Returns the amount of cryptocurrency for one address or all the addresses of the portfolio
+    #:param blocList => list of all the blockchain blocks
+    #:param publicAddress => if None we return the balance of all the addresses
+    def balance(self, blocList, publicAddress = None):
+        
+        balance = 0
+        for bloc in blocList:
+            tx = bloc.tx1
+            for utxo in tx.UTXOs:
+                if publicAddress != None:
+                    if utxo.dest == publicAddress:
+                        balance = balance + utxo.montant
+                else:
+                    if utxo.dest in self.cryptoPuzzle.values():
+                        balance = balance + utxo.montant
+        return balance
+
+    #Returns the list of the UTXO in the bloc
+    #:param blocList => list of all the blockchain blocks
+    def retrieveUTXOs(self, blocList):
+        utxoList = []
+        for bloc in blocList:
+            tx = bloc.tx1
+            for utxo in tx.UTXOs:
+                utxoList.append(utxo)
+        return utxoList
+    
+    # It serve to initialize a transaction and help to create a signature
+    #:param to => indicates recipient address
+    #:param amount => transaction amount
     def Simpletransaction(self, to, amount, privatekey):
         utxo = [to, amount]
         return utxo, cryptoPuzzle[privatekey], privatekey
-        #Verivier si le montant à payer est assez
+       
+    #Verifier si le montant à payer est assez
 
     """"def TxiTransaction(self, txi, recipient_adress, amount, numbloc=None, sign=None):
         if numbloc!= None and sign!= None:
@@ -110,17 +216,37 @@ class Wallet:
         else:
             utxo = [numbloc, txi.nTx, amount, recipient_adress, self.cryptoPuzzle]
         return utxo
+    
+    # Return the list of UTXO not linked to a TXI
+    #:param UTXO_list =>
+    #:param TX_List =>
+	def UTXO_not_linked_TXI(UTXO_list, TX_List):
+		cpt=0
+		UTXO_not_linked=[]
+		for i in range(len(UTXO_list)
+			for j in range(len(TX_list))
+				for k in range(len(TX_list[j].UTXOs))
+					if UTXO_list[i].nBloc==TX_List[j].UTXOs[k].nBloc && UTXO_list[i].nTx==TX_List[j].UTXOs[k].nTx && UTXO_list[i].nUTXO==TX_List[j].UTXOs[k].nUTXO:
+						cpt=cpt+1
+			if cpt==0:
+				UTXO_not_linked.append(UTXO_list[i])
+			cpt=0
+		return UTXO_not_linked
 
 
 
 class Wallet_test(unittest.TestCase):
 
+    # Checks the behavior if we enter correct credentials
+    # The user should be able to access his account
     def test_Connexion_ValidCredentials(self):
         myWallet = Wallet("id123", "AZERTYUIOP123")
         myWallet.open = False
         myWallet.areCredentialsValid("id123", "AZERTYUIOP123")
         self.assertTrue(myWallet.open)
 
+    # Checks the behavior if we enter incorrect credentials
+    # The user shouldn't be able to acces his account
     def test_Connexion_InvalidCredentials(self):
         myWallet = Wallet("id123", "AZERTYUIOP123")
         myWallet.open = False
@@ -131,11 +257,13 @@ class Wallet_test(unittest.TestCase):
         myWallet.areCredentialsValid("id1237", "AZERTYUIOP132347")
         self.assertFalse(myWallet.open)
 
-    def test_Disconnexion(self):
+    #Checks if the function closes the user's session
+    def test_Logout(self):
         myWallet = Wallet("id123", "AZERTYUIOP123")
-        myWallet.disconnection()
+        myWallet.logout()
         self.assertFalse(myWallet.open)
 
+    #Checks if the function is able to create a wallet only if there are correct inputs
     def test_NewWallet(self):
         with self.assertRaises(ValueError):
             Wallet("", "")
@@ -149,8 +277,29 @@ class Wallet_test(unittest.TestCase):
             Wallet(None, "Test")
         wallet = Wallet("id123", "AZERTYUIOP123")
         self.assertEqual([wallet.identifiant, wallet.mot_de_passe], ["id123", "AZERTYUIOP123"])
+        
+    #Checks if a UTXO is not linked to a TXI
+    def test_UTXO_not_linked_TXI(self):
+		myWallet = Wallet("id123", "AZERTYUIOP123")
+		UTXO=["a"]
+		TXI=[]
+		self.assertTrue(myWallet.UTXO_not_linked_TXI(UTXO,TXI),UTXO)
+		UTXO=["a"]
+		TXI=["a"]
+		none=[]
+		self.assertFalse(myWallet.UTXO_not_linked_TXI(UTXO,TXI),TXI)
+		self.assertTrue(myWallet.UTXO_not_linked_TXI(UTXO,TXI),none)
 
 
 
-if __name__ == '__main__':
-    unittest.main()
+# =======================
+#      MAIN PROGRAM
+# =======================
+
+# Main Program
+if __name__ == "__main__":
+    myWallet = Wallet("id123", "AZERTYUIOP123")
+    myWallet.open = False
+    #unittest.main()
+    menu_principal(myWallet)
+ 
