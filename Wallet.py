@@ -1,6 +1,7 @@
 import unittest
 import logging
 import sys, os
+import datetime
 
 # ===========================================
 #               COMPONENT N° 2
@@ -186,64 +187,74 @@ class Wallet:
                 utxoList.append(utxo)
         return utxoList
 
-    # It serve to initialize a transaction and help to create a signature
-    #:param to => indicates recipient address
-    #:param amount => transaction amount
-    def Simpletransaction(self, to, amount, privatekey):
-        utxo = [to, amount]
-        return utxo, cryptoPuzzle[privatekey], privatekey
-
-    #Verifier si le montant à payer est assez
-    def takeUtxosAndTransValue(listUtxoNotSpend, amount):
-        values = 0
-        UtxoVisited = []
+    #This function checks that the amount of the transaction is sufficient
+    #:param listUtxoNotSpend=> list of utxos not spend
+    #:param amount=> amount of the transaction
+    #Return the sum of UTXOs choosen for the transactions
+    def selectUtxoForTransaction(listUtxoNotSpend, amount):
+        summ = 0
+        UtxoChoosen = []
         for i in range(len(listUtxoNotSpend)):
-            values = values + listUtxoNotSpend[i].montant
-            if values < amount:
-                UtxoVisited.append(listUtxoNotSpend[i])
-            else if values >= amount:
-                UtxoVisited.append(listUtxoNotSpend[i])
+            summ = summ + listUtxoNotSpend[i].montant
+            if summ <= amount:
+                UtxoChoosen.append(listUtxoNotSpend[i])
+            else:
                 break;
-        return UtxoVisited
+        return UtxoChoosen,summ
 
-    def takeAmount(listUtxo):
-        values = 0
-        for value in listUtxoChoosen:
-            values = values + value.montant
-        return values
+    #this function creates the list of txi for the transaction
+    #:param listUtxos=> liste of utxos choosen for transaction
+    #:param sign=>sign of the transaction
+    #return the list of TXI
+    def convertUtxoInTxi(self, listUtxos, sign):
+        """
+        This function creates new transaction inputs with previous Utxos
+        """
+        listTxi = []
+        for utxo in listUtxos:
+            txi = TXI(utxo.nBloc, utxo.nTx, utxo.nUtxo, sign)
+            listTxi.append(txi)
+        return listTxi
 
-    #return the list of UTXO of Key
-    """def retrieveUTXOsByKey(listUtxo, key):
-        newList = []
-        for value in listUtxo:
-            if key == value.dest:
-                newList.append(value)
-        return newList"""
+    #This function Creates an String (concaten the strings)
+    #:param: sender_publicAdress, recipient_adress, amount => strings for contenate
+    #:return result=> result from concatenation
+    def concatTransactionParameters(self, sender_publicAdress, recipient_adress, amount):
+        result =  ''.join([sender_publicAdress, recipient_adress, amount, datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")])
+        return result
 
+    # This function serves to initialize a transaction and help to create a signature
+    #:param sender_privateAdress => indicates sender private address
+    #:param recipient_adress => indicates recipient address
+    #:param amount => transaction amount
+    #:param blocList => List of all bloc in blockchain
+    #:return listTxi=> Txi list for transaction, [utxo_recipient, utxo_sender]=> recipient Utxo and sender Utxo
     def transaction(self, sender_privateAdress, recipient_adress, amount, blocList):
+        #retrieve the list of utxo
         listUtxoNotSpend = retrieveUTXOs(blocList)#Extraire la liste des utxo
-        #listUtxoByKey = retrieveUTXOsByKey(listUtxoNotSpend, self.cryptoPuzzle[sender_privateAdress])#
-        listUtxoChoosen = takeUtxosAndTransValue(listUtxoNotSpend, amount)
-        listUtxi = listUtxoChoosen # initialize txi list of the transaction
 
-        values = takeAmount(listUtxoChoosen)
+        #Lecture des utxodispo pas encore fait ( appel de la METHODE D'ISMAIL)
 
-        for value in listUtxoChoosen:
-            listUtxoNotSpend.remove(value)
-        #Calcul du montant restant
-        residual_amount = utxo_sender.montant - amount
-        utxo_recipient = utxo()
-        utxo_sender = utxo()
-        listUtxoNotSpend.append(utxo_sender)
-
-        #Sign transaction with privateKay
-        sign = signature(chaine,sender_privateAdress)
+        #Takes sender public address
         sender_publicAdress = self.cryptoPuzzle[sender_privateAdress]
-        dico_transaction = {'sender_publicAdress': sender_publicAdress,
-                            'recipient_adress':recipient_adress,
-                            'amount':amount,
-                            'signature':sign}
-        return listUtxi, listUtxoNotSpend, dico_transaction, utxo_recipient, utxo_sender
+        listUtxoChoosen, values = selectUtxoForTransaction(listUtxoNotSpend, amount)
+
+        #creates an string with sender_publicAdress, recipient_adress, amount for signing
+        chaineToSign = concatTransactionParameters(sender_publicAdress, recipient_adress, amount)
+        #Sign transaction with privateKay
+        sign = signature(chaineToSign, sender_privateAdress)
+
+         # initializes txi list of the transaction
+        listTxi = convertUtxoInTxi(listUtxoChoosen, sign)
+
+        #Calculates the residual amount
+        residual_amount = values - amount
+
+        #intialializes or create utxo_recipient, utxo_sender
+        utxo_recipient = utxo(-1,-1,-1,amount, recipient_adress, -1)
+        utxo_sender = utxo(-1,-1,-1,residual_amount, sender_publicAdress, -1)
+
+        return listTxi, [utxo_recipient, utxo_sender]
 
 
     # Return the list of UTXO not linked to a TXI
