@@ -220,7 +220,8 @@ class Wallet:
     #:param: sender_publicAdress, recipient_adress, amount => strings for contenate
     #:return result=> result from concatenation
     def concatTransactionParameters(self, sender_publicAdress, recipient_adress, amount):
-        result =  ''.join([sender_publicAdress, recipient_adress, amount, datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")])
+        result =  ''.join([sender_publicAdress, recipient_adress, str(amount), datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")])
+        print(result)
         return result
 
     # This function serves to initialize a transaction and help to create a signature
@@ -231,16 +232,16 @@ class Wallet:
     #:return listTxi=> Txi list for transaction, [utxo_recipient, utxo_sender]=> recipient Utxo and sender Utxo
     def transaction(self, sender_privateAdress, recipient_adress, amount, blocList):
         #retrieve the list of utxo
-        listUtxoNotSpend = retrieveUTXOs(blocList)#Extraire la liste des utxo
+        listUtxoNotSpend = self.retrieveUTXOs(blocList)#Extraire la liste des utxo
 
         #Lecture des utxodispo pas encore fait ( appel de la METHODE D'ISMAIL)
 
         #Takes sender public address
         sender_publicAdress = self.cryptoPuzzle[sender_privateAdress]
-        listUtxoChoosen, values = selectUtxoForTransaction(listUtxoNotSpend, amount)
+        listUtxoChoosen, values = self.selectUtxoForTransaction(listUtxoNotSpend, amount)
 
         #creates an string with sender_publicAdress, recipient_adress, amount for signing
-        chaineToSign = concatTransactionParameters(sender_publicAdress, recipient_adress, amount)
+        chaineToSign = self.concatTransactionParameters(sender_publicAdress, recipient_adress, amount)
         #Sign transaction with privateKay
         sign = signature(chaineToSign, sender_privateAdress)
 
@@ -251,8 +252,8 @@ class Wallet:
         residual_amount = values - amount
 
         #intialializes or create utxo_recipient, utxo_sender
-        utxo_recipient = utxo(-1,-1,-1,amount, recipient_adress, -1)
-        utxo_sender = utxo(-1,-1,-1,residual_amount, sender_publicAdress, -1)
+        utxo_recipient = UTXO(-1,-1,-1,amount, recipient_adress, -1)
+        utxo_sender = UTXO(-1,-1,-1,residual_amount, sender_publicAdress, -1)
 
         return listTxi, [utxo_recipient, utxo_sender]
 
@@ -260,18 +261,18 @@ class Wallet:
     # Return the list of UTXO not linked to a TXI
     #:param UTXO_list =>
     #:param TX_List =>
-	def UTXO_not_linked_TXI(UTXO_list, TX_List):
-		cpt=0
-		UTXO_not_linked=[]
-		for i in range(len(UTXO_list)
-			for j in range(len(TX_list))
-				for k in range(len(TX_list[j].UTXOs))
-					if UTXO_list[i].nBloc==TX_List[j].UTXOs[k].nBloc && UTXO_list[i].nTx==TX_List[j].UTXOs[k].nTx && UTXO_list[i].nUTXO==TX_List[j].UTXOs[k].nUTXO:
-						cpt=cpt+1
-			if cpt==0:
-				UTXO_not_linked.append(UTXO_list[i])
-			cpt=0
-		return UTXO_not_linked
+#    def UTXO_not_linked_TXI(self, UTXO_list, TX_List):
+#        cpt=0
+#        UTXO_not_linked=[]
+#        for i in range(len(UTXO_list)
+#            for j in range(len(TX_list))
+#				for k in range(len(TX_list[j].UTXOs))
+#					if UTXO_list[i].nBloc==TX_List[j].UTXOs[k].nBloc && UTXO_list[i].nTx==TX_List[j].UTXOs[k].nTx && UTXO_list[i].nUTXO==TX_List[j].UTXOs[k].nUTXO:
+#						cpt=cpt+1
+#			if cpt==0:
+#				UTXO_not_linked.append(UTXO_list[i])
+#			cpt=0
+#		return UTXO_not_linked
 
 
 
@@ -319,16 +320,24 @@ class Wallet_test(unittest.TestCase):
         self.assertEqual([wallet.identifiant, wallet.mot_de_passe], ["id123", "AZERTYUIOP123"])
 
     #Checks if a UTXO is not linked to a TXI
-    def test_UTXO_not_linked_TXI(self):
-		myWallet = Wallet("id123", "AZERTYUIOP123")
-		UTXO=["a"]
-		TXI=[]
-		self.assertTrue(myWallet.UTXO_not_linked_TXI(UTXO,TXI),UTXO)
-		UTXO=["a"]
-		TXI=["a"]
-		none=[]
-		self.assertFalse(myWallet.UTXO_not_linked_TXI(UTXO,TXI),TXI)
-		self.assertTrue(myWallet.UTXO_not_linked_TXI(UTXO,TXI),none)
+#    def test_UTXO_not_linked_TXI(self):
+#        myWallet = Wallet("id123", "AZERTYUIOP123")
+#        UTXO=["a"]
+#        TXI=[]
+#        self.assertTrue(myWallet.UTXO_not_linked_TXI(UTXO,TXI),UTXO)
+#        UTXO=["a"]
+#        TXI=["a"]
+#        none=[]
+#        self.assertFalse(myWallet.UTXO_not_linked_TXI(UTXO,TXI),TXI)
+#        self.assertTrue(myWallet.UTXO_not_linked_TXI(UTXO,TXI),none)
+    
+    def test_concatTransactionParameters(self):
+        myWallet = Wallet("id123", "AZERTYUIOP123")
+        sender_publicAdress = "SENDER"
+        recipient_adress = "RECIPIENT"
+        amount = 40
+        self.assertTrue("SENDERRECIPIENT40" in myWallet.concatTransactionParameters(sender_publicAdress, recipient_adress, amount))
+        self.assertEqual("SENDERRECIPIENT40" ,myWallet.concatTransactionParameters(sender_publicAdress, recipient_adress, amount)[:-19])
 
 
 
@@ -338,7 +347,7 @@ class Wallet_test(unittest.TestCase):
 
 # Main Program
 if __name__ == "__main__":
-    myWallet = Wallet("id123", "AZERTYUIOP123")
-    myWallet.open = False
-    #unittest.main()
-    menu_principal(myWallet)
+    #myWallet = Wallet("id123", "AZERTYUIOP123")
+    #myWallet.open = False
+    unittest.main()
+    #menu_principal(myWallet)
