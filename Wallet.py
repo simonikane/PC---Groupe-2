@@ -3,9 +3,9 @@ import logging
 import sys, os
 
 # ===========================================
-#               COMPONENT N° 2 
+#               COMPONENT N° 2
 #                     -
-#                   WALLET 
+#                   WALLET
 # ===========================================
 
 
@@ -31,7 +31,7 @@ import sys, os
 # When the user is authentified, he can choose what to do
 # Enter "1" to check his account balance
 # Enter "2" to make a transaction
-# Enter "0" to logout 
+# Enter "0" to logout
 
 def menu_principal(Wallet):
     os.system('clear')
@@ -44,9 +44,9 @@ def menu_principal(Wallet):
     print ("\n9. Logout")
     choice = input(" >>  ")
     menu(choice)
-    
+
 #Execute the given choice of the user
-    
+
 def menu(choice):
     if choice.lower() == '':
         actions['menu_principal']()
@@ -60,7 +60,7 @@ def menu(choice):
     return
 
 #Describes the ouput of the account balance
-    
+
 def menu_balance():
     print ("Hello\n")
     print ("Do you want to consult your balance according to a specific account or all of your accounts?")
@@ -81,7 +81,7 @@ def menu_balance():
     return
 
 #Describe the action related to transactions (creation of a transaction)
-    
+
 def menu_transaction():
     print ("Hello\n")
     print ("Who is the recipient of the transfer ?")
@@ -102,7 +102,7 @@ def back():
 # Exit program
 def quit():
     sys.exit()
-    
+
 # Menu definition
 # Describes all the possible functions of the program
 actions = {
@@ -119,7 +119,7 @@ class Wallet:
     #:param identifiant => the given id
     #:param password => the given password
     def __init__(self, identifiant, mot_de_passe):
-        
+
         if identifiant in ("", None) or mot_de_passe in ("", None):
             raise(ValueError("ID and password must be completed"))
         else:
@@ -153,7 +153,7 @@ class Wallet:
             if(loginId == self.identifiant and password == self.mot_de_passe):
                 self.open = True
                 print("Please wait, you will be redirected to your personnal portfolio")
-                
+
     # Logs out the user
     def logout(self):
         self.open = False
@@ -163,7 +163,7 @@ class Wallet:
     #:param blocList => list of all the blockchain blocks
     #:param publicAddress => if None we return the balance of all the addresses
     def balance(self, blocList, publicAddress = None):
-        
+
         balance = 0
         for bloc in blocList:
             tx = bloc.tx1
@@ -185,38 +185,67 @@ class Wallet:
             for utxo in tx.UTXOs:
                 utxoList.append(utxo)
         return utxoList
-    
+
     # It serve to initialize a transaction and help to create a signature
     #:param to => indicates recipient address
     #:param amount => transaction amount
     def Simpletransaction(self, to, amount, privatekey):
         utxo = [to, amount]
         return utxo, cryptoPuzzle[privatekey], privatekey
-       
+
     #Verifier si le montant à payer est assez
+    def takeUtxosAndTransValue(listUtxoNotSpend, amount):
+        values = 0
+        UtxoVisited = []
+        for i in range(len(listUtxoNotSpend)):
+            values = values + listUtxoNotSpend[i].montant
+            if values < amount:
+                UtxoVisited.append(listUtxoNotSpend[i])
+            else if values >= amount:
+                UtxoVisited.append(listUtxoNotSpend[i])
+                break;
+        return UtxoVisited
 
-    """"def TxiTransaction(self, txi, recipient_adress, amount, numbloc=None, sign=None):
-        if numbloc!= None and sign!= None:
-            txi.setNbloc(numbloc)
-            txi.setSignature(sign)
-            utxo = [numbloc, txi.nTx, amount, recipient_adress]
-        else:
-            utxo = [numbloc, txi.nTx, amount, recipient_adress, self.cryptoPuzzle]
-        return utxo""""
+    def takeAmount(listUtxo):
+        values = 0
+        for value in listUtxoChoosen:
+            values = values + value.montant
+        return values
 
-    def TxiTransaction(self, txi, recipient_adress, amount, numbloc=None, sign=None):
-        value = 0
-        for values in listUtxoNotSpend:
-            value = value + values.montant
+    #return the list of UTXO of Key
+    """def retrieveUTXOsByKey(listUtxo, key):
+        newList = []
+        for value in listUtxo:
+            if key == value.dest:
+                newList.append(value)
+        return newList"""
 
-        if numbloc!= None and sign!= None:
-            txi.setNbloc(numbloc)
-            txi.setSignature(sign)
-            utxo = [numbloc, txi.nTx, amount, recipient_adress]
-        else:
-            utxo = [numbloc, txi.nTx, amount, recipient_adress, self.cryptoPuzzle]
-        return utxo
-    
+    def transaction(self, sender_privateAdress, recipient_adress, amount, blocList):
+        listUtxoNotSpend = retrieveUTXOs(blocList)#Extraire la liste des utxo
+        #listUtxoByKey = retrieveUTXOsByKey(listUtxoNotSpend, self.cryptoPuzzle[sender_privateAdress])#
+        listUtxoChoosen = takeUtxosAndTransValue(listUtxoNotSpend, amount)
+        listUtxi = listUtxoChoosen # initialize txi list of the transaction
+
+        values = takeAmount(listUtxoChoosen)
+
+        for value in listUtxoChoosen:
+            listUtxoNotSpend.remove(value)
+        #Calcul du montant restant
+        residual_amount = utxo_sender.montant - amount
+        utxo_recipient = utxo()
+        utxo_sender = utxo()
+        listUtxoNotSpend.append(utxo_sender)
+
+        #Sign transaction with privateKay
+        sign = signature(chaine,sender_privateAdress)
+        sender_publicAdress = self.cryptoPuzzle[sender_privateAdress]
+        dico_transaction = {'sender_publicAdress': sender_publicAdress,
+                            'recipient_adress':recipient_adress,
+                            'amount':amount,
+                            'signature':sign}
+        return listUtxi, listUtxoNotSpend, dico_transaction, utxo_recipient, utxo_sender
+
+
     # Return the list of UTXO not linked to a TXI
     #:param UTXO_list =>
     #:param TX_List =>
@@ -277,7 +306,7 @@ class Wallet_test(unittest.TestCase):
             Wallet(None, "Test")
         wallet = Wallet("id123", "AZERTYUIOP123")
         self.assertEqual([wallet.identifiant, wallet.mot_de_passe], ["id123", "AZERTYUIOP123"])
-        
+
     #Checks if a UTXO is not linked to a TXI
     def test_UTXO_not_linked_TXI(self):
 		myWallet = Wallet("id123", "AZERTYUIOP123")
@@ -302,4 +331,3 @@ if __name__ == "__main__":
     myWallet.open = False
     #unittest.main()
     menu_principal(myWallet)
- 
