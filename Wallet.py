@@ -2,6 +2,7 @@ import unittest
 import logging
 import sys, os
 import datetime
+from unittest.mock import MagicMock
 
 # ===========================================
 #               COMPONENT N° 2
@@ -12,13 +13,12 @@ import datetime
 
 
 ################ To Do list #############################
-#faire une fonction qui permet de recuperer la liste des utxos non depensés: utiliser la classe Tx
-############se servir de cette fonction dans la balance afin de controler les montant non depensés
-#Menu géneral ()
-#fonction transaction
-    ############## interface utilisatueur pour la transaction
-#fonction balance
-    ############## interface utilisatueur pour la balance
+# TESTS
+# COMPTE RENDU:
+#
+# Meeting composant 1 (Didi) => Ok pour qu'ils retournent la liste des blocs lorsqu'on fait appelà leur fonction
+# Meeting composant 4 (Mikael) => cf captures groupe, OK pour envoyer juste la transaction (list TXI déjà signés par le composant signature, list UTXO)
+# Meeting composant 6 (Lisa) => Ils avaient besoin d'une chaine en Input pour leur fonction de hashage => on a fait le taff cf fonction concatTransactionParameters
 
 ################end To Do list#############################
 
@@ -34,10 +34,10 @@ import datetime
 # Enter "2" to make a transaction
 # Enter "0" to logout
 
-def menu_principal(Wallet):
+def menu_principal(myWallet):
     os.system('clear')
     print ("Hello,\n")
-    Wallet.connexion()
+    myWallet.connexion()
     #S'identifier en utilisant les fonctions de Iris
     print ("What do you want to do ?\n")
     print ("1. Check my account balance \n")
@@ -61,20 +61,19 @@ def menu(choice):
     return
 
 #Describes the ouput of the account balance
-
-def menu_balance():
+def menu_balance(myWallet, blocList):
     print ("Hello\n")
     print ("Do you want to consult your balance according to a specific account or all of your accounts?")
     print ("1. One specific account \n")
     print ("2. All of my accounts \n")
     account_choice = input(" >>  ")
     if account_choice == 1 :
-        print ("What are the account's informations ?")
-        account_account = input(" >>  ")
-        #print (Wallet.balance ('''Mettre ici les arguments'''))
+        print ("What are the account's informations (your private key) ?")
+        account = input(" >>  ")
+        print (myWallet.balance(blocList, account))
     elif account_choice == 2 :
         print ("Your current account balance for all of your accounts is :")
-        #print (Wallet.balance ('''Mettre ici les arguments'''))
+        print (myWallet.balance(blocList))
     print ("8. Back to the main menu")
     print ("9. Logout" )
     choix = input(" >>  ")
@@ -82,14 +81,16 @@ def menu_balance():
     return
 
 #Describe the action related to transactions (creation of a transaction)
-
-def menu_transaction():
+def menu_transaction(myWallet, blocList):
     print ("Hello\n")
-    print ("Who is the recipient of the transfer ?")
+    print ("Who is the recipient of the transfer (his/her public key)?")
     dest = input(" >> ")
     print ("How much do you want to transfer ?")
     amount = input(" >> ")
-    #print (Wallet.transaction ('''Mettre ici les arguments'''))
+    print ("What are the account's informations (your private key) ?")
+    account = input(" >>  ")
+    myWallet.transaction(account, dest, amount, blocList)
+    print("Pending Verifications... check your balance later")
     print ("8. Back to the main menu")
     print ("9. Logout" )
     choice = input(" >>  ")
@@ -101,7 +102,8 @@ def back():
     actions['menu_principal']()
 
 # Exit program
-def quit():
+def quit(myWallet):
+    myWallet.logout()
     sys.exit()
 
 # Menu definition
@@ -163,56 +165,49 @@ class Wallet:
     #Returns the amount of cryptocurrency for one address or all the addresses of the portfolio
     #:param blocList => list of all the blockchain blocks
     #:param publicAddress => if None we return the balance of all the addresses
+    # _______________________________________TO BE TESTED ___________________________
     def balance(self, blocList, publicAddress = None):
 
         balance = 0
-        for bloc in blocList:
-            tx = bloc.tx1
-            for utxo in tx.UTXOs:
-                if publicAddress != None:
-                    if utxo.dest == publicAddress:
-                        balance = balance + utxo.montant
-                else:
-                    if utxo.dest in self.cryptoPuzzle.values():
-                        balance = balance + utxo.montant
+        list_of_unspent_transaction = self.UTXO_not_in_TXI(blocList, publicAddress)
+        for utxo in list_of_unspent_transaction:
+            balance = balance + utxo.montant
         return balance
 
-    #Returns the list of the UTXO in the bloc
-    #:param blocList => list of all the blockchain blocks
-    def retrieveUTXOs(self, blocList):
-        utxoList = []
-        for bloc in blocList:
-            tx = bloc.tx1
-            for utxo in tx.UTXOs:
-                utxoList.append(utxo)
-        return utxoList
+    
 
-    #This function checks that the amount of the transaction is sufficient
-    #:param listUtxoNotSpend=> list of utxos not spend
+    #This function checks that the amount of the transaction is sufficient and selects the UTXOs to prepare the transaction
+    #:param listUtxoNotSpend=> list of utxos not spend per address 
     #:param amount=> amount of the transaction
     #Return the sum of UTXOs choosen for the transactions
+    # _______________________________________TO BE TESTED ___________________________
     def selectUtxoForTransaction(listUtxoNotSpend, amount):
         summ = 0
         UtxoChoosen = []
-        for i in range(len(listUtxoNotSpend)):
-            summ = summ + listUtxoNotSpend[i].montant
+        for utxo in listUtxoNotSpend:
+            summ = summ + utxo.montant
             if summ <= amount:
-                UtxoChoosen.append(listUtxoNotSpend[i])
+                UtxoChoosen.append(utxo)
             else:
                 break;
-        return UtxoChoosen,summ
+                
+        if summ < amount:
+            raise(ValueError("The amount is not sufficient"))
+        else:
+            return UtxoChoosen,summ
 
     #this function creates the list of txi for the transaction
     #:param listUtxos=> liste of utxos choosen for transaction
     #:param sign=>sign of the transaction
     #return the list of TXI
+    # _______________________________________TO BE TESTED ___________________________
     def convertUtxoInTxi(self, listUtxos, sign):
         """
         This function creates new transaction inputs with previous Utxos
         """
         listTxi = []
         for utxo in listUtxos:
-            txi = TXI(utxo.nBloc, utxo.nTx, utxo.nUtxo, sign)
+            txi = TXI(utxo.nBloc, utxo.nTx, utxo.nUTXO, sign)
             listTxi.append(txi)
         return listTxi
 
@@ -221,7 +216,6 @@ class Wallet:
     #:return result=> result from concatenation
     def concatTransactionParameters(self, sender_publicAdress, recipient_adress, amount):
         result =  ''.join([sender_publicAdress, recipient_adress, str(amount), datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")])
-        print(result)
         return result
 
     # This function serves to initialize a transaction and help to create a signature
@@ -230,27 +224,25 @@ class Wallet:
     #:param amount => transaction amount
     #:param blocList => List of all bloc in blockchain
     #:return listTxi=> Txi list for transaction, [utxo_recipient, utxo_sender]=> recipient Utxo and sender Utxo
+    # _______________________________________TO BE TESTED ___________________________
     def transaction(self, sender_privateAdress, recipient_adress, amount, blocList):
-        #retrieve the list of utxo
-        listUtxoNotSpend = self.retrieveUTXOs(blocList)#Extraire la liste des utxo
-
-        #Lecture des utxodispo pas encore fait ( appel de la METHODE D'ISMAIL)
-
         #Takes sender public address
         sender_publicAdress = self.cryptoPuzzle[sender_privateAdress]
+        #retrieve the list of not spent utxos
+        listUtxoNotSpend = self.UTXO_not_in_TXI(blocList, sender_publicAdress) 
         listUtxoChoosen, values = self.selectUtxoForTransaction(listUtxoNotSpend, amount)
 
         #creates an string with sender_publicAdress, recipient_adress, amount for signing
         chaineToSign = self.concatTransactionParameters(sender_publicAdress, recipient_adress, amount)
+        
         #Sign transaction with privateKay
         sign = signature(chaineToSign, sender_privateAdress)
 
          # initializes txi list of the transaction
-        listTxi = convertUtxoInTxi(listUtxoChoosen, sign)
+        listTxi = self.convertUtxoInTxi(listUtxoChoosen, sign)
 
         #Calculates the residual amount
         residual_amount = values - amount
-
         #intialializes or create utxo_recipient, utxo_sender
         utxo_recipient = UTXO(-1,-1,-1,amount, recipient_adress, -1)
         utxo_sender = UTXO(-1,-1,-1,residual_amount, sender_publicAdress, -1)
@@ -258,36 +250,79 @@ class Wallet:
         return listTxi, [utxo_recipient, utxo_sender]
 
 
+    # _______________________________________TO BE TESTED ___________________________
+    #Returns the list of the UTXO in the list of blocs
+    #:param blocList => list of all the blockchain blocks
+    def retrieveUTXOs(self, blocList):
+        utxoList = []
+        for bloc in blocList:
+            tx = bloc.tx1
+            for utxo in tx.UTXOs:
+                utxoList.append(utxo)
+        return utxoList 
+    
+    
+    # Return the list of all TXIs
+    #:param UTXO_list =>
+    #:param TX_List =>
+    def retrieveTXIs(self, blocList):
+        txiList=[]
+        for bloc in blocList:
+            tx=bloc.tx1
+            for txi in tx.TXIs:
+                txiList.append(txi)
+        return txiList
+    
+	
+    # _______________________________________TO BE TESTED ___________________________
     # Return the list of UTXO not linked to a TXI
     #:param UTXO_list =>
     #:param TX_List =>
+    def UTXO_not_in_TXI(self, blocList, publicAddress = None):
+        UTXO_List=self.retrieveUTXOs(blocList)
+        TXI_list=self.retrieveTXIs(blocList)
+        utxo_Not_in_TXI_List=[]
+        compteur=0
+        
+        for utxo in UTXO_List:
+            if utxo.dest == publicAddress:
+                for txi in TXI_list:
+                    if utxo.nUTXO == txi.nUtxo:
+                        compteur=compteur+1
+                if compteur == 0:
+                    utxo_Not_in_TXI_List.append(utxo)
+                compteur=0
+            if publicAddress == None:
+                    if utxo.dest in self.cryptoPuzzle.values():
+                        for txi in TXI_list:
+                            if utxo.nUTXO == txi.nUtxo:
+                                compteur=compteur+1
+                        if compteur == 0:
+                            utxo_Not_in_TXI_List.append(utxo)
+                        compteur=0
+        return utxo_Not_in_TXI_List
 		
-	def retrieveTXIs(self, blocList)
-		txiList=[]
-		for bloc in blocList:
-			tx=bloc.tx1
-			for txi in tx.TXIs:
-				txiList.append(txi)
-		return txiList
-	
-	def UTXO_not_in_TXI(self, blocList)
-		UTXO_list=retrieveUTXOs(self, blocList)
-		TXI_list=retrieveTXIs(self, blocList)
-		utxoList=[]
-		compteur=0
-		for utxo in UTXO_List:
-			for txi in TXI_list:
-				if utxo.nUTX0!=txi.nUtxo:
-					compteur=compteur+1
-			if compteur==0:
-				utxoList.append(utxo)
-			compteur=0
-		return utxoList
-		
-
-
 
 class Wallet_test(unittest.TestCase):
+    
+    txi1 = "Tsc 1"
+    txi2 = "Tsc 2"
+    txi3 = "Tsc 3"
+    txi7 = "Tsc 7"
+    txi8 = "Tsc 8"
+    txi9 = "Tsc 9"
+    txi10 = "Tsc 10"
+    txi11 = "Tsc 11"
+        
+    tx1 = MagicMock(TXIs = [txi1,txi2,txi3])
+    tx3 = MagicMock(TXIs = [txi7,txi8,txi9])
+    tx4 = MagicMock(TXIs = [txi10,txi11])
+        
+    bloc1 = MagicMock(tx1 = tx1)
+    bloc2 = MagicMock(tx1 = tx3)
+    bloc3 = MagicMock(tx1 = tx4)
+        
+    blocList = [bloc1, bloc2, bloc3]
 
     # Checks the behavior if we enter correct credentials
     # The user should be able to access his account
@@ -332,17 +367,9 @@ class Wallet_test(unittest.TestCase):
 
     #Checks if a UTXO is not linked to a TXI
 #    def test_UTXO_not_linked_TXI(self):
-#        myWallet = Wallet("id123", "AZERTYUIOP123")
-#        UTXO=["a"]
-#        TXI=[]
-#        self.assertTrue(myWallet.UTXO_not_linked_TXI(UTXO,TXI),UTXO)
-#        UTXO=["a"]
-#        TXI=["a"]
-#        none=[]
-#        self.assertFalse(myWallet.UTXO_not_linked_TXI(UTXO,TXI),TXI)
-#        self.assertTrue(myWallet.UTXO_not_linked_TXI(UTXO,TXI),none)
+
     
-    def test_concatTransactionParameters(self):
+    def test_ConcatTransactionParameters(self):
         myWallet = Wallet("id123", "AZERTYUIOP123")
         sender_publicAdress = "SENDER"
         recipient_adress = "RECIPIENT"
@@ -350,7 +377,17 @@ class Wallet_test(unittest.TestCase):
         self.assertTrue("SENDERRECIPIENT40" in myWallet.concatTransactionParameters(sender_publicAdress, recipient_adress, amount))
         self.assertEqual("SENDERRECIPIENT40" ,myWallet.concatTransactionParameters(sender_publicAdress, recipient_adress, amount)[:-19])
 
-
+    def test_RetrieveTXIs(self):
+        myWallet = Wallet("id123", "AZERTYUIOP123")
+        testList = myWallet.retrieveTXIs(Wallet_test.blocList)
+        
+        expectedlst = [Wallet_test.txi1,Wallet_test.txi2,Wallet_test.txi3,Wallet_test.txi7,Wallet_test.txi8,Wallet_test.txi9,Wallet_test.txi10,Wallet_test.txi11]
+        
+        self.assertEquals(testList, expectedlst)
+        
+    def test_UTXO_not_in_TXI(self):
+        myWallet = Wallet("id123", "AZERTYUIOP123")
+                
 
 # =======================
 #      MAIN PROGRAM
