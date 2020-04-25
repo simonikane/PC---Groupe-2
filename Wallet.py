@@ -261,20 +261,8 @@ class Wallet:
     # Return the list of UTXO not linked to a TXI
     #:param UTXO_list =>
     #:param TX_List =>
-	def UTXO_not_linked_TXI(UTXO_list, TX_List):
-		cpt=0
-		UTXO_not_linked=[]
-		for i in range(len(UTXO_list)
-			for j in range(len(TX_list))
-				for k in range(len(TX_list[j].UTXOs))
-					if UTXO_list[i].nBloc==TX_List[j].UTXOs[k].nBloc && UTXO_list[i].nTx==TX_List[j].UTXOs[k].nTx && UTXO_list[i].nUTXO==TX_List[j].UTXOs[k].nUTXO:
-						cpt=cpt+1
-			if cpt==0:
-				UTXO_not_linked.append(UTXO_list[i])
-			cpt=0
-		return UTXO_not_linked
-	
-		def retrieveTXIs(self, blocList)
+		
+	def retrieveTXIs(self, blocList)
 		txiList=[]
 		for bloc in blocList:
 			tx=bloc.tx1
@@ -282,14 +270,18 @@ class Wallet:
 				txiList.append(txi)
 		return txiList
 	
-	def UTXO_not_in_TXI(UTXO_list, TXI_list)
+	def UTXO_not_in_TXI(self, blocList)
+		UTXO_list=retrieveUTXOs(self, blocList)
+		TXI_list=retrieveTXIs(self, blocList)
 		utxoList=[]
 		compteur=0
 		for utxo in UTXO_List:
 			for txi in TXI_list:
-				if utxo!=txi:
+				if utxo.nUTX0!=txi.nUtxo:
 					compteur=compteur+1
-			utxoList.append(utxo)
+			if compteur==0:
+				utxoList.append(utxo)
+			compteur=0
 		return utxoList
 		
 
