@@ -2,7 +2,11 @@ import unittest
 import logging
 import sys, os
 import datetime
+import composant6
+import bloc
 from unittest.mock import MagicMock
+from unittest.mock import patch
+
 
 # ===========================================
 #               COMPONENT N° 2
@@ -117,7 +121,6 @@ actions = {
 }
 
 class Wallet:
-
      #Initialisation of the portfolio
     #:param identifiant => the given id
     #:param password => the given password
@@ -131,7 +134,15 @@ class Wallet:
             self.open = False
             self.cryptoPuzzle = {} # Key : private key, value = public key
             logging.info('Test of the creation of a new wallet')
-
+    
+    
+    def generatePrivatePublicKeyCouple(self):
+        listkey = composant6.Signature.GenerateCouple()
+        publickey = listkey[1]
+        privatekey = listkey[0]
+        self.cryptoPuzzle[privatekey] = publickey
+    
+    
     # Collects the user's credentials
     def askForConnexion(self):
         loginId = input("Please enter your login id : ")
@@ -165,7 +176,6 @@ class Wallet:
     #Returns the amount of cryptocurrency for one address or all the addresses of the portfolio
     #:param blocList => list of all the blockchain blocks
     #:param publicAddress => if None we return the balance of all the addresses
-    # _______________________________________TO BE TESTED ___________________________
     def balance(self, blocList, publicAddress = None):
 
         balance = 0
@@ -200,14 +210,13 @@ class Wallet:
     #:param listUtxos=> liste of utxos choosen for transaction
     #:param sign=>sign of the transaction
     #return the list of TXI
-    # _______________________________________TO BE TESTED ___________________________
     def convertUtxoInTxi(self, listUtxos, sign):
         """
         This function creates new transaction inputs with previous Utxos
         """
         listTxi = []
         for utxo in listUtxos:
-            txi = TXI(utxo.nBloc, utxo.nTx, utxo.nUTXO, sign)
+            txi = bloc.TXI(utxo.nBloc, utxo.nTx, utxo.nUTXO, sign)
             listTxi.append(txi)
         return listTxi
 
@@ -313,7 +322,16 @@ class Wallet_test(unittest.TestCase):
     txi9 = "Tsc 9"
     txi10 = "Tsc 10"
     txi11 = "Tsc 11"
-        
+    
+    utxo3 = MagicMock(nBloc = 1, ntx = 1, nUTXO = 1)
+    utxo4 = MagicMock(nBloc = 2, ntx = 1, nUTXO = 2)
+    utxo5 = MagicMock(nBloc = 3, ntx = 1, nUTXO = 3)
+
+    txi4 = MagicMock(nBloc = 1, ntx = 1, nUTXO = 1, sign = "signature1")
+    txi5 = MagicMock(nBloc = 2, ntx = 1, nUTXO = 2, sign = "signature1")
+    txi6 = MagicMock(nBloc = 3, ntx = 1, nUTXO = 3, sign = "signature1")
+    
+    
     tx1 = MagicMock(TXIs = [txi1,txi2,txi3])
     tx3 = MagicMock(TXIs = [txi7,txi8,txi9])
     tx4 = MagicMock(TXIs = [txi10,txi11])
@@ -323,7 +341,8 @@ class Wallet_test(unittest.TestCase):
     bloc3 = MagicMock(tx1 = tx4)
         
     blocList = [bloc1, bloc2, bloc3]
-
+    listUTXO = [utxo3, utxo4, utxo5]
+    listTXI =  [txi4, txi5, txi6]
     # Checks the behavior if we enter correct credentials
     # The user should be able to access his account
     def test_Connexion_ValidCredentials(self):
@@ -365,9 +384,6 @@ class Wallet_test(unittest.TestCase):
         wallet = Wallet("id123", "AZERTYUIOP123")
         self.assertEqual([wallet.identifiant, wallet.mot_de_passe], ["id123", "AZERTYUIOP123"])
 
-    #Checks if a UTXO is not linked to a TXI
-#    def test_UTXO_not_linked_TXI(self):
-
     
     def test_ConcatTransactionParameters(self):
         myWallet = Wallet("id123", "AZERTYUIOP123")
@@ -383,12 +399,61 @@ class Wallet_test(unittest.TestCase):
         
         expectedlst = [Wallet_test.txi1,Wallet_test.txi2,Wallet_test.txi3,Wallet_test.txi7,Wallet_test.txi8,Wallet_test.txi9,Wallet_test.txi10,Wallet_test.txi11]
         
-        self.assertEquals(testList, expectedlst)
-        
-    def test_UTXO_not_in_TXI(self):
-        myWallet = Wallet("id123", "AZERTYUIOP123")
-                
+        self.assertEqual(testList, expectedlst)
 
+        
+    def test_balance(self):
+        myWallet = Wallet("id123", "AZERTYUIOP123")
+        utxo1 = MagicMock(montant = 30)
+        utxo2 = MagicMock(montant = 5)
+        utxo3 = MagicMock(montant = 20)
+        myWallet.UTXO_not_in_TXI = MagicMock(return_value = [utxo1,utxo2,utxo3])
+        b = myWallet.balance([],None)
+        self.assertEqual(b, 55)
+        myWallet.UTXO_not_in_TXI = MagicMock(return_value = [])
+        b = myWallet.balance([],None)
+        self.assertEqual(b, 0)
+        
+        
+    def test_generatePrivatePublicKeyCouple(self):
+        myWallet = Wallet("id123", "AZERTYUIOP123")
+        with patch("composant6.Signature") as mock:
+            mock.GenerateCouple.return_value = ["privatek", "publick"]
+            myWallet.generatePrivatePublicKeyCouple()
+        self.assertEqual(myWallet.cryptoPuzzle["privatek"], "publick")
+        
+       
+        
+        
+        
+        
+        
+        
+        
+    def side_effectF(nBloc, nTx, nUTXO, sign):
+        for txi in Wallet_test.listTXI:
+            if(nBloc == txi.nBloc and nTx ==txi.nTx and nUTXO == txi.nUTXO and sign == txi.sign):
+                print(txi)
+                return txi
+        return None
+    
+#    def test_convertUtxoInTxi(self):
+#        myWallet = Wallet("id123", "AZERTYUIOP123")
+#        with patch("bloc.TXI") as mock:
+#            mock.TXI = MagicMock(side_effect = Wallet_test.side_effectF)
+#            listTxitest = myWallet.convertUtxoInTxi(Wallet_test.listUTXO, "signature1")
+#            print("----")
+#            print(listTxitest)
+#            print("----")
+#            print(Wallet_test.listTXI)
+#            print("----")
+#        self.assertEqual(listTxitest[0], Wallet_test.listTXI[0])
+#        with patch("bloc.TXI") as mock:
+#            mock.TXI = MagicMock(side_effect = Wallet_test.side_effectF)
+#            listTxitest = myWallet.convertUtxoInTxi(Wallet_test.listUTXO, "signature2")
+#        self.assertNotEqual(listTxitest[0], Wallet_test.listTXI[0])
+        
+        
 # =======================
 #      MAIN PROGRAM
 # =======================
