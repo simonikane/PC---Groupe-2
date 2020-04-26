@@ -190,7 +190,7 @@ class Wallet:
     #:param listUtxoNotSpend=> list of utxos not spend per address
     #:param amount=> amount of the transaction
     #Return the sum of UTXOs choosen for the transactions
-    # _______________________________________TO BE TESTED ___________________________
+
     def selectUtxoForTransaction(listUtxoNotSpend, amount):
         summ = 0
         UtxoChoosen = []
@@ -233,39 +233,32 @@ class Wallet:
     #:param amount => transaction amount
     #:param blocList => List of all bloc in blockchain
     #:return listTxi=> Txi list for transaction, [utxo_recipient, utxo_sender]=> recipient Utxo and sender Utxo
-    # _______________________________________TO BE TESTED ___________________________
+
     def transaction(self, sender_privateAdress, recipient_adress, amount, blocList):
         #Takes sender public address
-        #sender_publicAdress = self.cryptoPuzzle[sender_privateAdress]
-        sender_publicAdress = "AAAAAAAA"
+        sender_publicAdress = self.cryptoPuzzle[sender_privateAdress]
+
         #retrieve the list of not spent utxos
-        #listUtxoNotSpend = self.UTXO_not_in_TXI(blocList, sender_publicAdress)
-        listUtxoNotSpend = blocList
-        listUtxoChoosen, values = self.selectUtxoForTransaction(listUtxoNotSpend, amount)
+        listUtxoNotSpend = self.UTXO_not_in_TXI(blocList, sender_publicAdress)
+        #Chooses the UTXOs choosen
+        listUtxoChoosen, values = self.selectUtxoForTransaction(blocList, amount)
 
         #creates an string with sender_publicAdress, recipient_adress, amount for signing
         chaineToSign = self.concatTransactionParameters(sender_publicAdress, recipient_adress, amount)
 
         #Sign transaction with privateKay
-        sign = composant6.Signature.Sign(chaineToSign, sender_privateAdress)# For the test
-
+        sign = composant6.Signature.Sign(chaineToSign, sender_privateAdress)
          # initializes txi list of the transaction
         listTxi = self.convertUtxoInTxi(listUtxoChoosen, sign)
-
         #Calculates the residual amount
         residual_amount = values - amount
         #intialializes or create utxo_recipient, utxo_sender
-        #utxo_recipient = UTXO(-1,-1,-1,amount, recipient_adress, -1)
-        #utxo_sender = UTXO(-1,-1,-1,residual_amount, sender_publicAdress, -1)
+        utxo_recipient = UTXO(-1,-1,-1,amount, recipient_adress, -1)
+        utxo_sender = UTXO(-1,-1,-1,residual_amount, sender_publicAdress, -1)
 
-        utxo_recipient = bloc.UTXO(-1,-1,-1,amount, recipient_adress, -1) #For the test
-        utxo_sender    = bloc.UTXO(-1,-1,-1,residual_amount, sender_publicAdress, -1) #For the test
-
-        #return listTxi, [utxo_recipient, utxo_sender]
-        return listTxi
+        return listTxi, [utxo_recipient, utxo_sender]
 
 
-    # _______________________________________TO BE TESTED ___________________________
     #Returns the list of the UTXO in the list of blocs
     #:param blocList => list of all the blockchain blocks
     def retrieveUTXOs(self, blocList):
@@ -289,7 +282,6 @@ class Wallet:
         return txiList
 
 
-    # _______________________________________TO BE TESTED ___________________________
     # Return the list of UTXO not linked to a TXI
     #:param UTXO_list =>
     #:param TX_List =>
@@ -329,9 +321,9 @@ class Wallet_test(unittest.TestCase):
     txi10 = "Tsc 10"
     txi11 = "Tsc 11"
 
-    utxo3 = MagicMock(nBloc = 1, ntx = 1, nUTXO = 1)
-    utxo4 = MagicMock(nBloc = 2, ntx = 1, nUTXO = 2)
-    utxo5 = MagicMock(nBloc = 3, ntx = 1, nUTXO = 3)
+    utxo3 = MagicMock(nBloc = 1, ntx = 1, nUTXO = 1, montant = 15, dest = "key1", hash = "hash1")
+    utxo4 = MagicMock(nBloc = 2, ntx = 1, nUTXO = 2, montant = 8, dest = "key1", hash = "hash1")
+    utxo5 = MagicMock(nBloc = 3, ntx = 1, nUTXO = 3, montant = 15, dest = "key1", hash = "hash1")
 
     txi4 = MagicMock(nBloc = 1, ntx = 1, nUTXO = 1, sign = "signature1")
     txi5 = MagicMock(nBloc = 2, ntx = 1, nUTXO = 2, sign = "signature1")
@@ -340,7 +332,6 @@ class Wallet_test(unittest.TestCase):
     tx1 = MagicMock(TXIs = [txi1,txi2,txi3])
     tx3 = MagicMock(TXIs = [txi7,txi8,txi9])
     tx4 = MagicMock(TXIs = [txi10,txi11])
-##################################################################
 
     utxo6 = MagicMock(nBloc = 1, ntx = 1, nUTXO = 4, montant = 1, dest = "key1", hash = "hash1")
     utxo7 = MagicMock(nBloc = 2, ntx = 1, nUTXO = 5, montant = 8, dest = "key2", hash = "hash1")
@@ -349,19 +340,24 @@ class Wallet_test(unittest.TestCase):
     utxo10 = MagicMock(nBloc = 5, ntx = 1, nUTXO = 8, montant =98, dest = "key2", hash = "hash1")
     utxo11 = MagicMock(nBloc = 6, ntx = 1, nUTXO = 9, montant = 5,dest = "key3", hash = "hash1")
     utxo12 = MagicMock(nBloc = 7, ntx = 1, nUTXO = 10, montant = 55,dest = "key3", hash = "hash1")
+    utxo13 = MagicMock(nBloc = 3, ntx = 1, nUTXO = 6, montant = 18,dest = "key3", hash = "hash1")
+    utxo14 = MagicMock(nBloc = 4, ntx = 1, nUTXO = 7, montant = 2, dest = "key1", hash = "hash1")
+    utxo15 = MagicMock(nBloc = 5, ntx = 1, nUTXO = 8, montant =98, dest = "key2", hash = "hash1")
+    utxo16 = MagicMock(nBloc = 6, ntx = 1, nUTXO = 9, montant = 5,dest = "key3", hash = "hash1")
+    utxo17 = MagicMock(nBloc = 7, ntx = 1, nUTXO = 10, montant = 55,dest = "key3", hash = "hash1")
     #For LAYE
-    """txi7 = MagicMock(nBloc = 4, ntx = 1, nUTXO = 1, sign = "signature1")
-    txi8 = MagicMock(nBloc = 5, ntx = 1, nUTXO = 2, sign = "signature1")
-    txi9 = MagicMock(nBloc = 6, ntx = 1, nUTXO = 3, sign = "signature1")
-    txi10 = MagicMock(nBloc = 7, ntx = 1, nUTXO = 1, sign = "signature1")
-    txi11 = MagicMock(nBloc = 8, ntx = 1, nUTXO = 2, sign = "signature1")
-    txi12 = MagicMock(nBloc = 9, ntx = 1, nUTXO = 3, sign = "signature1")"""
+    txi12 = MagicMock(nBloc = 4, ntx = 1, nUTXO = 1, sign = "signature1")
+    txi13 = MagicMock(nBloc = 5, ntx = 1, nUTXO = 2, sign = "signature1")
+    txi14 = MagicMock(nBloc = 6, ntx = 1, nUTXO = 3, sign = "signature1")
+    txi15 = MagicMock(nBloc = 7, ntx = 1, nUTXO = 1, sign = "signature1")
+    txi16 = MagicMock(nBloc = 8, ntx = 1, nUTXO = 2, sign = "signature1")
+    txi17 = MagicMock(nBloc = 9, ntx = 1, nUTXO = 3, sign = "signature1")
 
 
     #for lAYE
     tx5 = MagicMock(TXIs = [txi4,txi5,txi6], UTXOs = [utxo3, utxo4, utxo5])
-    tx6 = MagicMock(TXIs = [txi7,txi8,txi9], UTXOs = [utxo7, utxo8, utxo9])
-    tx7 = MagicMock(TXIs = [txi10,txi11, txi11], UTXOs = [utxo10, utxo11, utxo12])
+    tx6 = MagicMock(TXIs = [txi7,txi8,txi9], UTXOs = [utxo12, utxo13, utxo14])
+    tx7 = MagicMock(TXIs = [txi10,txi11, txi11], UTXOs = [utxo15, utxo16, utxo17])
 
     bloc4 = MagicMock(tx1 = tx5)
     bloc5 = MagicMock(tx1 = tx6)
@@ -369,9 +365,8 @@ class Wallet_test(unittest.TestCase):
 
     blocListWithUtXoComplet = [bloc4, bloc5, bloc6]
     listTXI2 = [utxo3, utxo4, utxo5, utxo6, utxo7]
+    listUTXOCHO = [utxo3, utxo4, utxo5, utxo6, utxo7, utxo8, utxo9, utxo10, utxo11, utxo12]
 
-
-#######################################################
     bloc1 = MagicMock(tx1 = tx1)
     bloc2 = MagicMock(tx1 = tx3)
     bloc3 = MagicMock(tx1 = tx4)
@@ -380,7 +375,6 @@ class Wallet_test(unittest.TestCase):
     listUTXO = [utxo3, utxo4, utxo5]
     listTXI =  [txi4, txi5, txi6]
 
-    #Complet List of the Bloc
 
     # Checks the behavior if we enter correct credentials
     # The user should be able to access his account
@@ -463,12 +457,12 @@ class Wallet_test(unittest.TestCase):
 
 
 
-    """def test_Transaction(self):
+    """"def test_Transaction(self):
         myWallet = Wallet("id123", "AZERTYUIOP123")
         sender_privateAdress = "SENDER"
         recipient_adress = "RECIPIENT"
         amount = 40
-        self.assertEqual(self.listTXI2, myWallet.transaction(sender_privateAdress, recipient_adress, amount, self.blocListWithUtXoComplet))
+        self.assertEqual(self.listTXI2, myWallet.transaction(sender_privateAdress, recipient_adress, amount, self.listUTXOCHO))
 
 
     def side_effectF(nBloc, nTx, nUTXO, sign):
