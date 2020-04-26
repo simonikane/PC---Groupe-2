@@ -191,7 +191,7 @@ class Wallet:
     #:param amount=> amount of the transaction
     #Return the sum of UTXOs choosen for the transactions
 
-    def selectUtxoForTransaction(listUtxoNotSpend, amount):
+    def selectUtxoForTransaction(self, listUtxoNotSpend, amount):
         summ = 0
         UtxoChoosen = []
         for utxo in listUtxoNotSpend:
