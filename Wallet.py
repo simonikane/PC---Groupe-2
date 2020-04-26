@@ -329,9 +329,9 @@ class Wallet_test(unittest.TestCase):
     txi10 = "Tsc 10"
     txi11 = "Tsc 11"
 
-    utxo3 = MagicMock(nBloc = 1, ntx = 1, nUTXO = 1, montant = 15, dest = "key1", hash = "hash1")
-    utxo4 = MagicMock(nBloc = 2, ntx = 1, nUTXO = 2, montant = 8, dest = "key2", hash = "hash1")
-    utxo5 = MagicMock(nBloc = 3, ntx = 1, nUTXO = 3, montant = 15,dest = "key3", hash = "hash1")
+    utxo3 = MagicMock(nBloc = 1, ntx = 1, nUTXO = 1)
+    utxo4 = MagicMock(nBloc = 2, ntx = 1, nUTXO = 2)
+    utxo5 = MagicMock(nBloc = 3, ntx = 1, nUTXO = 3)
 
     txi4 = MagicMock(nBloc = 1, ntx = 1, nUTXO = 1, sign = "signature1")
     txi5 = MagicMock(nBloc = 2, ntx = 1, nUTXO = 2, sign = "signature1")
@@ -350,12 +350,12 @@ class Wallet_test(unittest.TestCase):
     utxo11 = MagicMock(nBloc = 6, ntx = 1, nUTXO = 9, montant = 5,dest = "key3", hash = "hash1")
     utxo12 = MagicMock(nBloc = 7, ntx = 1, nUTXO = 10, montant = 55,dest = "key3", hash = "hash1")
     #For LAYE
-    txi7 = MagicMock(nBloc = 4, ntx = 1, nUTXO = 1, sign = "signature1")
+    """txi7 = MagicMock(nBloc = 4, ntx = 1, nUTXO = 1, sign = "signature1")
     txi8 = MagicMock(nBloc = 5, ntx = 1, nUTXO = 2, sign = "signature1")
     txi9 = MagicMock(nBloc = 6, ntx = 1, nUTXO = 3, sign = "signature1")
     txi10 = MagicMock(nBloc = 7, ntx = 1, nUTXO = 1, sign = "signature1")
     txi11 = MagicMock(nBloc = 8, ntx = 1, nUTXO = 2, sign = "signature1")
-    txi12 = MagicMock(nBloc = 9, ntx = 1, nUTXO = 3, sign = "signature1")
+    txi12 = MagicMock(nBloc = 9, ntx = 1, nUTXO = 3, sign = "signature1")"""
 
 
     #for lAYE
@@ -463,7 +463,7 @@ class Wallet_test(unittest.TestCase):
 
 
 
-    def test_Transaction(self):
+    """def test_Transaction(self):
         myWallet = Wallet("id123", "AZERTYUIOP123")
         sender_privateAdress = "SENDER"
         recipient_adress = "RECIPIENT"
@@ -476,7 +476,7 @@ class Wallet_test(unittest.TestCase):
             if(nBloc == txi.nBloc and nTx ==txi.nTx and nUTXO == txi.nUTXO and sign == txi.sign):
                 print(txi)
                 return txi
-        return None
+        return None"""
 
 #    def test_convertUtxoInTxi(self):
 #        myWallet = Wallet("id123", "AZERTYUIOP123")
