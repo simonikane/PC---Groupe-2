@@ -134,15 +134,15 @@ class Wallet:
             self.open = False
             self.cryptoPuzzle = {} # Key : private key, value = public key
             logging.info('Test of the creation of a new wallet')
-    
-    
+
+
     def generatePrivatePublicKeyCouple(self):
         listkey = composant6.Signature.GenerateCouple()
         publickey = listkey[1]
         privatekey = listkey[0]
         self.cryptoPuzzle[privatekey] = publickey
-    
-    
+
+
     # Collects the user's credentials
     def askForConnexion(self):
         loginId = input("Please enter your login id : ")
@@ -184,10 +184,10 @@ class Wallet:
             balance = balance + utxo.montant
         return balance
 
-    
+
 
     #This function checks that the amount of the transaction is sufficient and selects the UTXOs to prepare the transaction
-    #:param listUtxoNotSpend=> list of utxos not spend per address 
+    #:param listUtxoNotSpend=> list of utxos not spend per address
     #:param amount=> amount of the transaction
     #Return the sum of UTXOs choosen for the transactions
     # _______________________________________TO BE TESTED ___________________________
@@ -200,7 +200,7 @@ class Wallet:
                 UtxoChoosen.append(utxo)
             else:
                 break;
-                
+
         if summ < amount:
             raise(ValueError("The amount is not sufficient"))
         else:
@@ -236,16 +236,18 @@ class Wallet:
     # _______________________________________TO BE TESTED ___________________________
     def transaction(self, sender_privateAdress, recipient_adress, amount, blocList):
         #Takes sender public address
-        sender_publicAdress = self.cryptoPuzzle[sender_privateAdress]
+        #sender_publicAdress = self.cryptoPuzzle[sender_privateAdress]
+        sender_publicAdress = "AAAAAAAA"
         #retrieve the list of not spent utxos
-        listUtxoNotSpend = self.UTXO_not_in_TXI(blocList, sender_publicAdress) 
+        #listUtxoNotSpend = self.UTXO_not_in_TXI(blocList, sender_publicAdress)
+        listUtxoNotSpend = blocList
         listUtxoChoosen, values = self.selectUtxoForTransaction(listUtxoNotSpend, amount)
 
         #creates an string with sender_publicAdress, recipient_adress, amount for signing
         chaineToSign = self.concatTransactionParameters(sender_publicAdress, recipient_adress, amount)
-        
+
         #Sign transaction with privateKay
-        sign = signature(chaineToSign, sender_privateAdress)
+        sign = composant6.Signature.Sign(chaineToSign, sender_privateAdress)# For the test
 
          # initializes txi list of the transaction
         listTxi = self.convertUtxoInTxi(listUtxoChoosen, sign)
@@ -253,10 +255,14 @@ class Wallet:
         #Calculates the residual amount
         residual_amount = values - amount
         #intialializes or create utxo_recipient, utxo_sender
-        utxo_recipient = UTXO(-1,-1,-1,amount, recipient_adress, -1)
-        utxo_sender = UTXO(-1,-1,-1,residual_amount, sender_publicAdress, -1)
+        #utxo_recipient = UTXO(-1,-1,-1,amount, recipient_adress, -1)
+        #utxo_sender = UTXO(-1,-1,-1,residual_amount, sender_publicAdress, -1)
 
-        return listTxi, [utxo_recipient, utxo_sender]
+        utxo_recipient = bloc.UTXO(-1,-1,-1,amount, recipient_adress, -1) #For the test
+        utxo_sender    = bloc.UTXO(-1,-1,-1,residual_amount, sender_publicAdress, -1) #For the test
+
+        #return listTxi, [utxo_recipient, utxo_sender]
+        return listTxi
 
 
     # _______________________________________TO BE TESTED ___________________________
@@ -268,9 +274,9 @@ class Wallet:
             tx = bloc.tx1
             for utxo in tx.UTXOs:
                 utxoList.append(utxo)
-        return utxoList 
-    
-    
+        return utxoList
+
+
     # Return the list of all TXIs
     #:param UTXO_list =>
     #:param TX_List =>
@@ -281,8 +287,8 @@ class Wallet:
             for txi in tx.TXIs:
                 txiList.append(txi)
         return txiList
-    
-	
+
+
     # _______________________________________TO BE TESTED ___________________________
     # Return the list of UTXO not linked to a TXI
     #:param UTXO_list =>
@@ -292,7 +298,7 @@ class Wallet:
         TXI_list=self.retrieveTXIs(blocList)
         utxo_Not_in_TXI_List=[]
         compteur=0
-        
+
         for utxo in UTXO_List:
             if utxo.dest == publicAddress:
                 for txi in TXI_list:
@@ -310,10 +316,10 @@ class Wallet:
                             utxo_Not_in_TXI_List.append(utxo)
                         compteur=0
         return utxo_Not_in_TXI_List
-		
+
 
 class Wallet_test(unittest.TestCase):
-    
+
     txi1 = "Tsc 1"
     txi2 = "Tsc 2"
     txi3 = "Tsc 3"
@@ -322,27 +328,60 @@ class Wallet_test(unittest.TestCase):
     txi9 = "Tsc 9"
     txi10 = "Tsc 10"
     txi11 = "Tsc 11"
-    
-    utxo3 = MagicMock(nBloc = 1, ntx = 1, nUTXO = 1)
-    utxo4 = MagicMock(nBloc = 2, ntx = 1, nUTXO = 2)
-    utxo5 = MagicMock(nBloc = 3, ntx = 1, nUTXO = 3)
+
+    utxo3 = MagicMock(nBloc = 1, ntx = 1, nUTXO = 1, montant = 15, dest = "key1", hash = "hash1")
+    utxo4 = MagicMock(nBloc = 2, ntx = 1, nUTXO = 2, montant = 8, dest = "key2", hash = "hash1")
+    utxo5 = MagicMock(nBloc = 3, ntx = 1, nUTXO = 3, montant = 15,dest = "key3", hash = "hash1")
 
     txi4 = MagicMock(nBloc = 1, ntx = 1, nUTXO = 1, sign = "signature1")
     txi5 = MagicMock(nBloc = 2, ntx = 1, nUTXO = 2, sign = "signature1")
     txi6 = MagicMock(nBloc = 3, ntx = 1, nUTXO = 3, sign = "signature1")
-    
-    
+
     tx1 = MagicMock(TXIs = [txi1,txi2,txi3])
     tx3 = MagicMock(TXIs = [txi7,txi8,txi9])
     tx4 = MagicMock(TXIs = [txi10,txi11])
-        
+##################################################################
+
+    utxo6 = MagicMock(nBloc = 1, ntx = 1, nUTXO = 4, montant = 1, dest = "key1", hash = "hash1")
+    utxo7 = MagicMock(nBloc = 2, ntx = 1, nUTXO = 5, montant = 8, dest = "key2", hash = "hash1")
+    utxo8 = MagicMock(nBloc = 3, ntx = 1, nUTXO = 6, montant = 18,dest = "key3", hash = "hash1")
+    utxo9 = MagicMock(nBloc = 4, ntx = 1, nUTXO = 7, montant = 2, dest = "key1", hash = "hash1")
+    utxo10 = MagicMock(nBloc = 5, ntx = 1, nUTXO = 8, montant =98, dest = "key2", hash = "hash1")
+    utxo11 = MagicMock(nBloc = 6, ntx = 1, nUTXO = 9, montant = 5,dest = "key3", hash = "hash1")
+    utxo12 = MagicMock(nBloc = 7, ntx = 1, nUTXO = 10, montant = 55,dest = "key3", hash = "hash1")
+    #For LAYE
+    txi7 = MagicMock(nBloc = 4, ntx = 1, nUTXO = 1, sign = "signature1")
+    txi8 = MagicMock(nBloc = 5, ntx = 1, nUTXO = 2, sign = "signature1")
+    txi9 = MagicMock(nBloc = 6, ntx = 1, nUTXO = 3, sign = "signature1")
+    txi10 = MagicMock(nBloc = 7, ntx = 1, nUTXO = 1, sign = "signature1")
+    txi11 = MagicMock(nBloc = 8, ntx = 1, nUTXO = 2, sign = "signature1")
+    txi12 = MagicMock(nBloc = 9, ntx = 1, nUTXO = 3, sign = "signature1")
+
+
+    #for lAYE
+    tx5 = MagicMock(TXIs = [txi4,txi5,txi6], UTXOs = [utxo3, utxo4, utxo5])
+    tx6 = MagicMock(TXIs = [txi7,txi8,txi9], UTXOs = [utxo7, utxo8, utxo9])
+    tx7 = MagicMock(TXIs = [txi10,txi11, txi11], UTXOs = [utxo10, utxo11, utxo12])
+
+    bloc4 = MagicMock(tx1 = tx5)
+    bloc5 = MagicMock(tx1 = tx6)
+    bloc6 = MagicMock(tx1 = tx7)
+
+    blocListWithUtXoComplet = [bloc4, bloc5, bloc6]
+    listTXI2 = [utxo3, utxo4, utxo5, utxo6, utxo7]
+
+
+#######################################################
     bloc1 = MagicMock(tx1 = tx1)
     bloc2 = MagicMock(tx1 = tx3)
     bloc3 = MagicMock(tx1 = tx4)
-        
+
     blocList = [bloc1, bloc2, bloc3]
     listUTXO = [utxo3, utxo4, utxo5]
     listTXI =  [txi4, txi5, txi6]
+
+    #Complet List of the Bloc
+
     # Checks the behavior if we enter correct credentials
     # The user should be able to access his account
     def test_Connexion_ValidCredentials(self):
@@ -384,7 +423,7 @@ class Wallet_test(unittest.TestCase):
         wallet = Wallet("id123", "AZERTYUIOP123")
         self.assertEqual([wallet.identifiant, wallet.mot_de_passe], ["id123", "AZERTYUIOP123"])
 
-    
+
     def test_ConcatTransactionParameters(self):
         myWallet = Wallet("id123", "AZERTYUIOP123")
         sender_publicAdress = "SENDER"
@@ -396,12 +435,12 @@ class Wallet_test(unittest.TestCase):
     def test_RetrieveTXIs(self):
         myWallet = Wallet("id123", "AZERTYUIOP123")
         testList = myWallet.retrieveTXIs(Wallet_test.blocList)
-        
+
         expectedlst = [Wallet_test.txi1,Wallet_test.txi2,Wallet_test.txi3,Wallet_test.txi7,Wallet_test.txi8,Wallet_test.txi9,Wallet_test.txi10,Wallet_test.txi11]
-        
+
         self.assertEqual(testList, expectedlst)
 
-        
+
     def test_balance(self):
         myWallet = Wallet("id123", "AZERTYUIOP123")
         utxo1 = MagicMock(montant = 30)
@@ -413,30 +452,32 @@ class Wallet_test(unittest.TestCase):
         myWallet.UTXO_not_in_TXI = MagicMock(return_value = [])
         b = myWallet.balance([],None)
         self.assertEqual(b, 0)
-        
-        
+
+
     def test_generatePrivatePublicKeyCouple(self):
         myWallet = Wallet("id123", "AZERTYUIOP123")
         with patch("composant6.Signature") as mock:
             mock.GenerateCouple.return_value = ["privatek", "publick"]
             myWallet.generatePrivatePublicKeyCouple()
         self.assertEqual(myWallet.cryptoPuzzle["privatek"], "publick")
-        
-       
-        
-        
-        
-        
-        
-        
-        
+
+
+
+    def test_Transaction(self):
+        myWallet = Wallet("id123", "AZERTYUIOP123")
+        sender_privateAdress = "SENDER"
+        recipient_adress = "RECIPIENT"
+        amount = 40
+        self.assertEqual(self.listTXI2, myWallet.transaction(sender_privateAdress, recipient_adress, amount, self.blocListWithUtXoComplet))
+
+
     def side_effectF(nBloc, nTx, nUTXO, sign):
         for txi in Wallet_test.listTXI:
             if(nBloc == txi.nBloc and nTx ==txi.nTx and nUTXO == txi.nUTXO and sign == txi.sign):
                 print(txi)
                 return txi
         return None
-    
+
 #    def test_convertUtxoInTxi(self):
 #        myWallet = Wallet("id123", "AZERTYUIOP123")
 #        with patch("bloc.TXI") as mock:
@@ -452,8 +493,8 @@ class Wallet_test(unittest.TestCase):
 #            mock.TXI = MagicMock(side_effect = Wallet_test.side_effectF)
 #            listTxitest = myWallet.convertUtxoInTxi(Wallet_test.listUTXO, "signature2")
 #        self.assertNotEqual(listTxitest[0], Wallet_test.listTXI[0])
-        
-        
+
+
 # =======================
 #      MAIN PROGRAM
 # =======================
