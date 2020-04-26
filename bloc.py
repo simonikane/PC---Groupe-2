@@ -1,10 +1,18 @@
 # -*- coding: utf-8 -*-
-"""
-Created on Sun Apr 26 13:03:22 2020
-
-@author: irisj
-"""
 
 class TXI():
-    def __init__(nBloc, nTx, nUTXO, sign):
-       pass
+    def __init__(self, nBloc, nTx, nUTXO, sign):
+       self.nBloc = nBloc
+       self.nTx = nTx
+       self.nUTXO = nUTXO
+       self.sign = sign
+
+
+class UTXO():
+    def __init__(self, nBloc, nTx, nUTXO, montant, dest, hash):
+        self.nBloc = nBloc
+        self.nTx = nTx
+        self.nUTXO = nUTXO
+        self.montant = montant
+        self.dest = dest
+        self.hash = hash
